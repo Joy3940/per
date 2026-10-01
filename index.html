@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 챔피언 교육신청 인원 조사 (2027~2029)</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--tx:#1d2733;--mu:#6b7785;--ac:#1f5fbf;--bd:#d9e0e8;--er:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171d;--card:#1b222b;--tx:#e6ebf0;--mu:#93a0ad;--ac:#6ea8ff;--bd:#2d3744}}
+:root[data-theme="dark"]{--bg:#12171d;--card:#1b222b;--tx:#e6ebf0;--mu:#93a0ad;--ac:#6ea8ff;--bd:#2d3744}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.w{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 4px}.s{color:var(--mu);font-size:13px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:3px}
+input,select{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+.g{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.btn{border:0;background:var(--ac);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font:inherit}
+.btn:disabled{opacity:.5}
+.x{background:transparent;border:1px solid var(--bd);color:var(--er);border-radius:6px;cursor:pointer;padding:2px 8px}
+.ov{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--bd);padding:8px;text-align:left;white-space:nowrap}
+th{background:var(--bg);color:var(--mu)}
+.n{text-align:right!important}
+tr.t td{font-weight:700;background:var(--bg);border-top:2px solid var(--ac)}
+#st{font-size:13px;color:var(--mu);margin-top:8px;min-height:20px}
+@media(max-width:640px){.g{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>AI 챔피언 교육신청 인원 조사</h1>
+<p class="s">2027~2029년 연도별 교육신청 희망 인원 수를 입력해 주세요. 제출 즉시 자동으로 집계됩니다. 같은 사람이 다시 제출하면 기존 내용이 수정됩니다.</p>
+
+<div class="card">
+<div class="g" style="grid-template-columns:1fr 1fr">
+<div><label>희망자 *</label><input id="name" placeholder="예: 홍길동"></div>
+<div><label>부서(팀) *</label><select id="dept"><option value="">부서 선택</option></select></div>
+</div>
+<div class="g" style="grid-template-columns:repeat(3,1fr)">
+<div><label>2027년 신청 인원</label><input id="y2027" type="number" min="0" step="1" value="0"></div>
+<div><label>2028년 신청 인원</label><input id="y2028" type="number" min="0" step="1" value="0"></div>
+<div><label>2029년 신청 인원</label><input id="y2029" type="number" min="0" step="1" value="0"></div>
+</div>
+<button class="btn" id="go" disabled>제출하기</button>
+<div id="st">불러오는 중…</div>
+</div>
+
+<div class="card"><b>부서별 · 연도별 집계</b><div class="ov" id="agg"></div></div>
+<div class="card"><b>제출 현황</b><div class="ov" id="lst"></div></div>
+</div>
+
+<script>
+const DEPTS=["행정기획과","생산지원과","지정기록관리과","기록보존과","기록서비스과"],Y=[2027,2028,2029],$=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let col=null,uid=null,owner=false,rows=[],filled=false;
+
+function st(t,err){const e=$("#st");e.textContent=t;e.style.color=err?"var(--er)":"var(--mu)"}
+const num=v=>Math.max(0,Math.floor(Number(v)||0));
+
+function render(){
+ const by={};
+ rows.forEach(r=>{const d=(r.dept||"").trim();if(!d)return;const o=by[d]||(by[d]={2027:0,2028:0,2029:0});Y.forEach(y=>o[y]+=num(r["y"+y]))});
+ DEPTS.forEach(d=>{if(!by[d])by[d]={2027:0,2028:0,2029:0}});
+ const ds=[...DEPTS,...Object.keys(by).filter(d=>!DEPTS.includes(d)).sort((a,b)=>a.localeCompare(b,"ko"))],tot={};
+ Y.forEach(y=>tot[y]=ds.reduce((a,d)=>a+by[d][y],0));
+ const all=Y.reduce((a,y)=>a+tot[y],0);
+ $("#agg").innerHTML=`<table><tr><th>부서</th>${Y.map(y=>`<th class="n">${y}년</th>`).join("")}<th class="n">합계</th></tr>
+ ${ds.map(d=>`<tr><td>${esc(d)}</td>${Y.map(y=>`<td class="n">${by[d][y]}</td>`).join("")}<td class="n">${Y.reduce((a,y)=>a+by[d][y],0)}</td></tr>`).join("")}
+ <tr class="t"><td>연도별 총계</td>${Y.map(y=>`<td class="n">${tot[y]}</td>`).join("")}<td class="n">${all}</td></tr></table>`;
+ const oi=d=>{const i=DEPTS.indexOf(d);return i<0?99:i};
+ const L=[...rows].sort((a,b)=>oi(a.dept)-oi(b.dept)||(a.dept||"").localeCompare(b.dept||"","ko"));
+ $("#lst").innerHTML=L.length?`<table><tr><th>희망자</th><th>부서</th>${Y.map(y=>`<th class="n">${y}</th>`).join("")}<th></th></tr>
+ ${L.map(r=>`<tr><td>${esc(r.name||"")}</td><td>${esc(r.dept||"")}</td>${Y.map(y=>`<td class="n">${num(r["y"+y])}</td>`).join("")}<td>${(r._id===uid||owner)?`<button class="x" data-id="${esc(r._id)}">삭제</button>`:""}</td></tr>`).join("")}</table>`:`<p class="s">제출 내역이 없습니다.</p>`;
+ $("#lst").querySelectorAll("[data-id]").forEach(b=>b.onclick=async()=>{
+  if(!confirm("이 제출 내역을 삭제할까요?"))return;
+  try{await col.doc(b.dataset.id).delete()}catch(e){st("삭제하지 못했습니다: "+(e.message||e.code),1)}
+ });
+}
+
+async function init(){
+ DEPTS.forEach(d=>$("#dept").add(new Option(d,d)));
+ render();
+ if(!window.claude||!claude.use){st("이 페이지는 claude.ai에서 열어야 공유 집계가 작동합니다.",1);return}
+ try{
+  const db=await claude.use("db"),user=await claude.use("user");
+  if(!db||!user){st("로그인 후 다시 열어 주세요. (공유 저장소를 사용할 수 없습니다)",1);return}
+  uid=String(await user.id());owner=!!(user.isOwner&&user.isOwner());
+  col=db.collection("responses");
+  col.onSnapshot(snap=>{
+   rows=snap.docs.map(d=>({...d.data(),_id:d.id}));
+   if(!filled){const me=rows.find(r=>r._id===uid);if(me){$("#name").value=me.name||"";if(me.dept&&!DEPTS.includes(me.dept))$("#dept").add(new Option(me.dept,me.dept));$("#dept").value=me.dept||"";Y.forEach(y=>$("#y"+y).value=num(me["y"+y]));st("이전에 제출한 내용을 불러왔습니다. 수정 후 다시 제출할 수 있습니다.")}else st("");filled=true}
+   render();
+  },e=>st("데이터를 불러오지 못했습니다: "+(e.message||e.code),1));
+  $("#go").disabled=false;
+  if(!filled)st("");
+ }catch(e){st("초기화 오류: "+(e.message||e),1)}
+}
+
+$("#go").onclick=async()=>{
+ const name=$("#name").value.trim(),dept=$("#dept").value.trim();
+ if(!name){st("희망자 이름을 입력해 주세요.",1);return}
+ if(!dept){st("부서를 선택해 주세요.",1);return}
+ const d={name,dept,ts:new Date().toISOString()};
+ Y.forEach(y=>{d["y"+y]=num($("#y"+y).value);$("#y"+y).value=d["y"+y]});
+ $("#go").disabled=true;
+ try{await col.doc(uid).set(d);st("제출되었습니다. 집계에 반영되었습니다.")}
+ catch(e){st("제출하지 못했습니다: "+(e.message||e.code),1)}
+ $("#go").disabled=false;
+};
+init();
+</script>
+</body>
+</html>
